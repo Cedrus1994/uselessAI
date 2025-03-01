@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/Cedrus1994/uselessAI/static/css/main.f855e6bc.css",
+    "main.js": "/Cedrus1994/uselessAI/static/js/main.301ccd68.js",
+    "static/js/453.b33e8e50.chunk.js": "/Cedrus1994/uselessAI/static/js/453.b33e8e50.chunk.js",
+    "static/media/logo.svg": "/Cedrus1994/uselessAI/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/Cedrus1994/uselessAI/index.html",
+    "main.f855e6bc.css.map": "/Cedrus1994/uselessAI/static/css/main.f855e6bc.css.map",
+    "main.301ccd68.js.map": "/Cedrus1994/uselessAI/static/js/main.301ccd68.js.map",
+    "453.b33e8e50.chunk.js.map": "/Cedrus1994/uselessAI/static/js/453.b33e8e50.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.301ccd68.js"
+  ]
+}
