@@ -41,14 +41,14 @@ const UI_TEXT = {
 
 export default function App() {
   const [apiKey, setApiKey] = useState("");
-  const [analysisPrompt, setAnalysisPrompt] = useState(UI_TEXT.vi.defaultPrompt);
+  const [analysisPrompt, setAnalysisPrompt] = useState(UI_TEXT.en.defaultPrompt);
   const [analysisOutput, setAnalysisOutput] = useState("");
   const [analysisLog, setAnalysisLog] = useState([]); // store logs (max 20)
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusMsg, setStatusMsg] = useState("Idle");
-  const [language, setLanguage] = useState("vi");
+  const [language, setLanguage] = useState("en");
 
   // Vision-capable model example
   const visionModel = "gpt-4o-mini";
@@ -357,8 +357,8 @@ export default function App() {
             onChange={(e) => setLanguage(e.target.value)}
             style={{ marginRight: "5px", padding: "5px" }}
           >
-            <option value="vi">Tiếng Việt</option>
             <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
           </select>
           <label style={{ marginLeft: "10px" }}>{t.monitoringIntervalLabel}</label>
           <input
