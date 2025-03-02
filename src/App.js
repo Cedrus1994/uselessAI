@@ -4,7 +4,7 @@ import OpenAI from "openai";
 // Basic dictionary for UI text in English and Vietnamese
 const UI_TEXT = {
   vi: {
-    managerLabel: "UselessAIagent: Quản lý dô dụng :).",
+    managerLabel: "UselessAIagent: Quản lý dô dụng :) @CedrusDang.",
     usingVisionModel: "Sử dụng Vision Model",
     systemPromptLabel: "Lời nhắc hệ thống (mô tả bổ sung):",
     analysisOutputLabel: "Kết quả Phân tích:",
@@ -13,15 +13,15 @@ const UI_TEXT = {
     submit: "Gửi",
     startMonitoring: "Bắt đầu Giám sát",
     stopMonitoring: "Dừng Giám sát",
-    speakPrompt: "Nói lời nhắc",
+    speakPrompt: "Nói chuyện",
     repeat: "Lặp lại",
     stop: "Dừng",
     listeningForPrompt: "Đang lắng nghe lời nhắc...",
     recognizedSpeech: "Đã nhận diện lời nói. Đang gửi...",
-    defaultPrompt: "Hệ thống giám sát: Phân tích đối tượng.",
+    defaultPrompt: "Hệ thống giám sát: Phân tích tình huống trong ảnh.",
   },
   en: {
-    managerLabel: "UselessAIagent: Uselezzz manager :).",
+    managerLabel: "UselessAIagent: Uselezzz manager :) @CedrusDang.",
     usingVisionModel: "Using Vision Model",
     systemPromptLabel: "System Prompt (additional description):",
     analysisOutputLabel: "Analysis Output:",
@@ -35,7 +35,7 @@ const UI_TEXT = {
     stop: "Stop",
     listeningForPrompt: "Listening for prompt...",
     recognizedSpeech: "Recognized speech. Submitting...",
-    defaultPrompt: "Monitoring system: Analyze the subject.",
+    defaultPrompt: "Monitoring system: Analyze the situation in the image.",
   },
 };
 
@@ -48,10 +48,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusMsg, setStatusMsg] = useState("Idle");
-  const [language, setLanguage] = useState("vi");
+  const [language, setLanguage] = useState("en");
 
   // Vision-capable model example
-  const visionModel = "gpt-4o";
+  const visionModel = "gpt-4o-mini";
 
   const videoRef = useRef(null);
   const monitoringRef = useRef(false);
@@ -64,10 +64,10 @@ export default function App() {
     const isEnDefault = analysisPrompt === UI_TEXT.en.defaultPrompt;
 
     if (!analysisPrompt || isViDefault || isEnDefault) {
-      if (language === "vi") {
-        setAnalysisPrompt(UI_TEXT.vi.defaultPrompt);
-      } else {
+      if (language === "en") {
         setAnalysisPrompt(UI_TEXT.en.defaultPrompt);
+      } else {
+        setAnalysisPrompt(UI_TEXT.vi.defaultPrompt);
       }
     }
   }, [language]);
@@ -357,8 +357,8 @@ export default function App() {
             onChange={(e) => setLanguage(e.target.value)}
             style={{ marginRight: "5px", padding: "5px" }}
           >
-            <option value="vi">Tiếng Việt</option>
             <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
           </select>
           <label style={{ marginLeft: "10px" }}>{t.monitoringIntervalLabel}</label>
           <input
