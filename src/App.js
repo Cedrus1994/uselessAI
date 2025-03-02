@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import OpenAI from "openai";
 
-// Basic dictionary for UI text in English and Vietnamese
 const UI_TEXT = {
   vi: {
     managerLabel: "UselessAIagent: Quản lý dô dụng :) @CedrusDang.",
@@ -18,7 +17,8 @@ const UI_TEXT = {
     stop: "Dừng",
     listeningForPrompt: "Đang lắng nghe lời nhắc...",
     recognizedSpeech: "Đã nhận diện lời nói. Đang gửi...",
-    defaultPrompt: "Hệ thống giám sát: Phân tích tình huống trong ảnh.",
+    defaultPrompt: "Có ai trong ảnh không, họ có nhắm mắt ngủ không ? Có gì không an toàn không ? trời có sáng không ? Miêu tả cảnh vật.",
+    monitoringIntervalLabel: "Khoảng thời gian giám sát (ms):",
   },
   en: {
     managerLabel: "UselessAIagent: Uselezzz manager :) @CedrusDang.",
@@ -35,7 +35,8 @@ const UI_TEXT = {
     stop: "Stop",
     listeningForPrompt: "Listening for prompt...",
     recognizedSpeech: "Recognized speech. Submitting...",
-    defaultPrompt: "Monitoring system: Analyze the situation in the image.",
+    defaultPrompt: "Is there anyone in the photo? Do they close their eyes and sleep? Is there anything unsafe? Is it morning? Describe the scene.",
+    monitoringIntervalLabel: "Monitoring interval (ms):",
   },
 };
 
@@ -51,7 +52,7 @@ export default function App() {
   const [language, setLanguage] = useState("en");
 
   // Vision-capable model example
-  const visionModel = "gpt-4o-mini";
+  const visionModel = "gpt-4o";
 
   const videoRef = useRef(null);
   const monitoringRef = useRef(false);
@@ -168,17 +169,21 @@ export default function App() {
       const textResponse = res.choices[0].message.content;
       setAnalysisOutput(textResponse);
       addToLog(textResponse);
-      speakText(textResponse);
-      setStatusMsg("Received response and speaking.");
+      setStatusMsg("Speaking output...");
+      await speakText(textResponse); // Wait until speaking is finished
+      setStatusMsg("Speech finished.");
     } catch (err) {
       console.error("Error fetching AI response:", err);
       setError("Failed to fetch response. Please check your API key or model.");
       setStatusMsg("Idle");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
+  /**
+   * Add text to the analysis log (up to 20 items).
+   */
   const addToLog = (text) => {
     setAnalysisLog((prev) => {
       const newLog = [...prev, text];
@@ -189,34 +194,37 @@ export default function App() {
     });
   };
 
+  /**
+   * speakText now returns a Promise that resolves when speech finishes.
+   * This lets us await speakText(...) in a loop, ensuring we only continue
+   * after the text is completely spoken.
+   */
   const speakText = (text) => {
-    if (!('speechSynthesis' in window)) {
+    if (!("speechSynthesis" in window)) {
       setError("This browser does not support speech synthesis.");
-      return;
+      return Promise.resolve(); // gracefully return
     }
 
-    try {
-      setStatusMsg("Speaking text.");
+    return new Promise((resolve) => {
       const utterance = new SpeechSynthesisUtterance(text);
-      if (language === 'vi') {
-        utterance.lang = 'vi-VN';
+      if (language === "vi") {
+        utterance.lang = "vi-VN";
       } else {
-        utterance.lang = 'en-US';
+        utterance.lang = "en-US";
       }
 
       utterance.onend = () => {
-        setStatusMsg("Speech finished.");
-        if (monitoringRef.current) {
-          handleSubmit();
-        }
+        resolve(); // speech finished
+      };
+
+      utterance.onerror = (error) => {
+        console.error("Error using Web Speech API:", error);
+        setError("Failed to speak text.");
+        resolve(); // even if there's an error, we resolve so the flow continues
       };
 
       speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.error("Error using Web Speech API:", error);
-      setError("Failed to speak text.");
-      setStatusMsg("Idle");
-    }
+    });
   };
 
   const handleStop = () => {
@@ -224,44 +232,53 @@ export default function App() {
     setStatusMsg("Speech stopped.");
   };
 
-  const handleRepeat = () => {
+  const handleRepeat = async () => {
     if (!analysisOutput) {
       setError("No analysis output to speak.");
       return;
     }
-    speakText(analysisOutput);
+    await speakText(analysisOutput);
+    setStatusMsg("Speech finished.");
   };
 
-  // Start continuous monitoring
+  /**
+   * We define a separate monitoring loop that captures a frame, sends to the AI,
+   * and speaks the result. Only after the speaking finishes do we call setTimeout
+   * to wait the chosen interval before repeating. This ensures the waiting time
+   * is measured *after* speech finishes.
+   */
+  const monitorLoop = async () => {
+    if (!monitoringRef.current) return;
+
+    // Perform one iteration (capture + AI + speak).
+    await handleSubmit(); // handleSubmit awaits the speech as well
+
+    // If monitoring is still on, wait monitorInterval, then repeat.
+    if (monitoringRef.current) {
+      setStatusMsg(`Waiting ${monitorInterval}ms until next capture...`);
+      setTimeout(() => {
+        if (monitoringRef.current) {
+          monitorLoop();
+        }
+      }, monitorInterval);
+    }
+  };
+
   const handleStartMonitoring = () => {
     setError("");
     monitoringRef.current = true;
     setStatusMsg("Monitoring started.");
-    const monitorLoop = async () => {
-      if (monitoringRef.current) {
-        await handleSubmit();
-        setTimeout(monitorLoop, monitorInterval);
-      }
-    };
-    monitorLoop();
-    setError("");
-    monitoringRef.current = true;
-    handleSubmit();
-    setStatusMsg("Monitoring started.");
+    monitorLoop(); // begin the cycle
   };
 
-  // Stop continuous monitoring
   const handleStopMonitoring = () => {
-    monitoringRef.current = false;
-    setStatusMsg("Monitoring stopped.");
-    speechSynthesis.cancel();
     monitoringRef.current = false;
     setStatusMsg("Monitoring stopped.");
     speechSynthesis.cancel();
   };
 
   const handleVoiceInput = () => {
-    if (!('webkitSpeechRecognition' in window)) {
+    if (!("webkitSpeechRecognition" in window)) {
       setError("This browser does not support speech recognition.");
       return;
     }
@@ -269,7 +286,7 @@ export default function App() {
     const recognition = new window.webkitSpeechRecognition();
     recognitionRef.current = recognition;
 
-    recognition.lang = language === 'vi' ? 'vi-VN' : 'en-US';
+    recognition.lang = language === "vi" ? "vi-VN" : "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -294,7 +311,6 @@ export default function App() {
     };
   };
 
-  // We'll shorten references to the UI text so we don't repeat ourselves.
   const t = UI_TEXT[language];
 
   return (
@@ -340,13 +356,15 @@ export default function App() {
       </div>
 
       {/* Right Column: All other UI */}
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        padding: "20px",
-        overflow: "hidden",
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          padding: "20px",
+          overflow: "hidden",
+        }}
+      >
         <div style={{ marginBottom: "20px" }}>
           <p>
             {t.usingVisionModel}: <strong>{visionModel}</strong>
@@ -360,6 +378,7 @@ export default function App() {
             <option value="en">English</option>
             <option value="vi">Tiếng Việt</option>
           </select>
+
           <label style={{ marginLeft: "10px" }}>{t.monitoringIntervalLabel}</label>
           <input
             type="number"
